@@ -1,63 +1,66 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from pydantic import BaseModel
-from typing import Dict
-
+from typing import List
 
 app = FastAPI()
 
+students=[]
 
-class StudentCreate(BaseModel):
+class Student(BaseModel):
     name: str
-    age: int
     email: str
-    roll_number: str
-    department: str
-
-
-class Student(StudentCreate):
-    id: int
-
-
-# In-memory store for demonstration purposes
-_db: Dict[int, Student] = {}
-_next_id = 1
+    age: int
+    Roll_number:str
+    Department:str
 
 
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
 
+class StudentResponse(Student):
+    id: int
+   
 
-@app.post("/student", response_model=Student)
-def create_student(student: StudentCreate):
-    global _next_id
-    student_obj = Student(id=_next_id, **student.dict())
-    _db[_next_id] = student_obj
-    _next_id += 1
-    return student_obj
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
 
-
-@app.get("/student/{id}", response_model=Student)
-def read_student(id: int):
-    student = _db.get(id)
-    if not student:
-        raise HTTPException(status_code=404, detail="Student not found")
+def create_student(student:Student)->StudentResponse:
+    students.append(student)
     return student
+    
+def get_student_by_roll(roll):
+    for student in students:
+        if student.Roll_number==roll:
+            return student
+
+def read_student(roll:str)->StudentResponse:
+    return get_student_by_roll(roll)
 
 
-@app.put("/student/{id}", response_model=Student)
-def update_student(id: int, student: StudentCreate):
-    existing = _db.get(id)
-    if not existing:
-        raise HTTPException(status_code=404, detail="Student not found")
-    updated = Student(id=id, **student.dict())
-    _db[id] = updated
-    return updated
+def update_student(roll:str,student:Student)->StudentResponse:
+    return StudentResponse(roll=roll, **student.dict())
 
+def delete_student(roll:str):
+    return StudentResponse(roll=roll, **student.dict())
 
-@app.delete("/student/{id}")
-def delete_student(id: int):
-    if id not in _db:
-        raise HTTPException(status_code=404, detail="Student not found")
-    del _db[id]
-    return {"detail": "deleted"}
+@app.get("/students")
+def read_students():
+    return students
+
+@app.post("/students")
+def create_student_api(student:Student):
+    return create_student(student)
+
+@app.get("/students/{roll}")
+def read_student_api(roll:str):
+    return read_student(roll)
+
+@app.put("/students/{roll}")
+def update_student_api(roll:str,student:Student):
+    return update_student(roll,student)
+
+@app.delete("/students/{roll}")
+def delete_student_api(roll:str):
+    return delete_student(roll)
