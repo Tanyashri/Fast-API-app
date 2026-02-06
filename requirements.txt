@@ -1,0 +1,4 @@
+FastAPI
+sqlalchemy
+uvicorn[standard]
+pydantic
